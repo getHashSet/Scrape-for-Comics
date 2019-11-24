@@ -4,6 +4,7 @@
 
 const express = require("express");
 const handlebars = require("express-handlebars");
+const favicon = require("serve-favicon");
 const mongojs = require("mongojs");
 const morgan = require("morgan");
 const path = require("path");
@@ -17,6 +18,10 @@ const fs = require("fs");
 
 // store express into a variable that we can call later.
 let app = express();
+
+// stupid favicon
+// app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+// just made my own route to the favicon. The hell do I need a npm for then?
 
 // use morgan to check my routes in the terminal log.
 app.use(morgan("dev"));
@@ -151,6 +156,15 @@ app.get ("/api/drop", function(req, res) {
         res.send(deleted);
         console.log("You have dropped the DATABASE.");
     });
+});
+
+
+////////////
+// favicon
+////////////
+
+app.get ("/favicon.ico", function(req, res) {
+    res.sendfile("favicon.ico");
 });
 
 ///////////////////////////////////////////////
