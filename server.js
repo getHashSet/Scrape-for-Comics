@@ -1,4 +1,12 @@
 ///////////////////////////////////////////////
+// global variables 
+///////////////////////////////////////////////
+
+// this variable is used to collect multiple urls
+let chainedServerCalls;
+
+
+///////////////////////////////////////////////
 // npm 
 ///////////////////////////////////////////////
 
@@ -34,7 +42,12 @@ app.use(express.json());
 // *note*  all content of this folder will be available to the user.
 app.use(express.static("public"));
 
-// set up database
+
+///////////////////////////////////////////////
+// Database Stuff
+///////////////////////////////////////////////
+
+// first database is about user comments
 let databaseURL = "comics";
 let collections = ["comments"];
 
@@ -44,6 +57,14 @@ let db = mongojs(databaseURL, collections);
 // Log errors to the terminal
 db.on("error", function (err) {
     console.log("Database Error: ", err);
+});
+
+// second database will store the comic's urls
+let comicCollection = ["comics"];
+let db2 = mongojs(databaseURL, comicCollection);
+
+db2.on("error", function (err) {
+    console.log("Comic Database: ", err);
 });
 
 ///////////////////////////////////////////////
@@ -76,16 +97,16 @@ app.post("/api/add", function (req, res) {
 ////////////
 
 // route for finding a specific comic/comment
-app.get("/api/find/:id", function(req, res) {
+app.get("/api/find/:id", function (req, res) {
     // find the id in the data base. If it finds it then send the data else log the error.
     db.collections.findOne(
-    {
-        _id: mongojs.ObjectId(req.params.id)
-    },
-        function(error, dataFound) {
+        {
+            _id: mongojs.ObjectId(req.params.id)
+        },
+        function (error, dataFound) {
             error ?
-            console.error(error) :
-            res.send(dataFound);
+                console.error(error) :
+                res.send(dataFound);
         }
     )
 });
@@ -120,42 +141,46 @@ app.post("/api/update/:id", function (req, res) {
                 updated: Date.now()
             }
         },
-        function(error, edited) {
+        function (error, edited) {
             error ?
-            console.error(error) :
-            res.send(edited);
+                console.error(error) :
+                res.send(edited);
         }
     );
 });
-
 
 
 ////////////
 // delete
 ////////////
 
-app.get("/api/delete/:id", function(req, res) {
+app.get("/api/delete/:id", function (req, res) {
     db.collections.remove(
         {
             _id: mongojs.ObjectId(req.params.id)
         },
-        function(err, goodData) {
+        function (err, goodData) {
             err ?
-            console.error(err) :
-            res.send(goodData);
+                console.error(err) :
+                res.send(goodData);
         }
     )
 });
 
-// BONUS DROP THE DATABASE
+// OH SHIT THE FUZZ! DROP THE DATABASE! DROP THE GOD DAMN DATABASE!!!
 
-app.get ("/api/drop", function(req, res) {
-    db.collections.remove({}, function(err, deleted) {
+app.get("/api/drop", function (req, res) {
+    db.collections.remove({}, function (err, deleted) {
         err ?
-        console.error(err) :
-        res.send(deleted);
-        console.log("You have dropped the DATABASE.");
-    });
+        console.error(err) : null;
+
+        db.comics.remove({}, function (error, removed) {
+            error ?
+            console.error(error) :
+            res.send(removed);    
+            console.log("You have dropped the DATABASE.");
+        });
+    })
 });
 
 
@@ -163,8 +188,60 @@ app.get ("/api/drop", function(req, res) {
 // favicon
 ////////////
 
-app.get ("/favicon.ico", function(req, res) {
+app.get("/favicon.ico", function (req, res) {
     res.sendfile("favicon.ico");
+});
+
+
+////////////
+// scrape
+////////////
+
+app.get("/api/comics", function(req, res) {
+    db.comics.find({}, function (err, allComics) {
+        res.json(allComics);
+    });
+});
+
+
+app.get("/api/scrape", function (req, res) {
+    axios.get("https://penny-arcade.com/comic")
+    .then(resFromPennyArcade => {
+
+        // load the response into a $ variable using a function from the npm cheerio.
+        const $ = cheerio.load(resFromPennyArcade.data);
+
+        // create a variable to hold the comic object from the page.
+        let theComicsURL;
+
+        // narrow down what we are looking for by using an id locator
+        $("#comicFrame").each(function(i, element) {
+
+            // once we find one then push it to the variable.
+            // note you will want an array if using a class not an id.
+            theComicsURL = element;
+
+        });
+
+        // console log the object and narrow down the path for the data.
+        console.log(theComicsURL.children[0].attribs.src);
+
+        // add this to our database.
+        db.comics.insert(
+            {
+                "comic_url": `${theComicsURL.children[0].attribs.src}` 
+            },
+            function (errz, added) {
+                errz ?
+                console.error(errz) :
+                console.log(added);
+            }
+        )
+
+    })
+    .catch(err => {
+        console.error(err);
+    });
 });
 
 ///////////////////////////////////////////////
