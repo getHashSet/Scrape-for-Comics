@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////
 
 // this variable is used to collect multiple urls
-let chainedServerCalls;
+let globalVariable;
 
 
 ///////////////////////////////////////////////
@@ -114,7 +114,7 @@ app.get("/api/find/:id", function (req, res) {
 // display all content of the api in json format
 app.get("/api/all", function (req, res) {
     // database go to collections and find all objects
-    db.collections.find({}, function (err, dataFromDatabase) {
+    db.collections.find({}).sort({"date": -1}, function (err, dataFromDatabase) {
         err ? console.error(err) : res.json(dataFromDatabase);
     });
 });
@@ -204,6 +204,7 @@ app.get("/api/comics", function(req, res) {
 });
 
 
+// collect the last 3 penny arcade comic pages.
 app.get("/api/scrape", function (req, res) {
     axios.get("https://penny-arcade.com/comic")
     .then(resFromPennyArcade => {
@@ -213,30 +214,31 @@ app.get("/api/scrape", function (req, res) {
 
         // create a variable to hold the comic object from the page.
         let theComicsURL;
+        let comic2URL;
+
 
         // narrow down what we are looking for by using an id locator
         $("#comicFrame").each(function(i, element) {
-
             // once we find one then push it to the variable.
             // note you will want an array if using a class not an id.
             theComicsURL = element;
-
         });
 
-        // console log the object and narrow down the path for the data.
-        console.log(theComicsURL.children[0].attribs.src);
+        // grab the URL from the prev button.
+        $(".btnPrev").each(function(j, element2) {
+            comic2URL = element2;
+        })
 
-        // add this to our database.
-        db.comics.insert(
+        // console log the object and narrow down the path for the data.
+        //console.log(theComicsURL.children[0].attribs.src);
+        //let nextComic = comic2URL.attribs.href;
+
+        let allTheComics =
             {
-                "comic_url": `${theComicsURL.children[0].attribs.src}` 
-            },
-            function (errz, added) {
-                errz ?
-                console.error(errz) :
-                console.log(added);
-            }
-        )
+                "comic_1": `${theComicsURL.children[0].attribs.src}`
+            };
+
+        db.comics.insert(allTheComics);
 
     })
     .catch(err => {

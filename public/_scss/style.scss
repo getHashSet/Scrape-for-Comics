@@ -1,0 +1,40 @@
+$main: #000;
+
+.content_box {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    input {
+        padding: 1em;
+        width: 80%;
+        height: auto;
+    }
+}
+
+#comic {
+    max-width: 1000px;
+}
+
+.button {
+    user-select: none;
+    width: auto;
+    height: auto;
+    padding: 2em;
+    margin: 1em;
+    border-radius: 4px;
+    border: 3px solid $main;
+}
+
+.button:hover {
+    cursor: pointer;
+}
+
+.button:active {
+    transform: translateY(4px);
+}
+
+:focus {
+    outline: 5px solid $main;
+    outline-offset: 4px;
+}
